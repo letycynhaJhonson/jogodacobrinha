@@ -1,143 +1,117 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
-const message = document.getElementById("message");
-const bgm = document.getElementById("bgm");
-const scoreDisplay = document.getElementById("score");
-const highScoreDisplay = document.getElementById("highScore");
+const scoreText = document.getElementById("score");
+const highScoreText = document.getElementById("highScore");
+const mensagem = document.querySelector(".mensagem");
 
 const gridSize = 20;
 const tileCount = canvas.width / gridSize;
 
-let snake = [{ x: 10, y: 10 }];
-let velocity = { x: 0, y: 0 };
-let food = { x: 15, y: 15 };
-let foodColor = getRandomColor();
-let snakeColor = "#40615a";
-let gameOver = false;
-let score = 0;
-let highScore = 0;  // Inicia com 0, pois queremos zerar o recorde.
-let lightRadius = 80;  // Lanterna mais suave
-let running = false;
-let interval;
+let snake, direction, food, velocity, score;
+let highScore = localStorage.getItem("highScore") || 0;
+let game;
 
-highScoreDisplay.textContent = highScore;
+initializeGame();
 
-function getRandomPosition() {
-  return {
-    x: Math.floor(Math.random() * tileCount),
-    y: Math.floor(Math.random() * tileCount)
-  };
+function initializeGame() {
+  snake = [{ x: 10, y: 10 }];
+  direction = { x: 0, y: 0 };
+  food = randomPosition();
+  velocity = 200;
+  score = 0;
+
+  scoreText.textContent = "Pontos: " + score;
+  highScoreText.textContent = "Recorde: " + highScore;
+
+  if (game) clearInterval(game);
+  game = setInterval(draw, velocity);
 }
 
-function getRandomColor() {
-  const colors = ["#ff6b6b", "#6bcB77", "#4d96ff", "#f7c948", "#9f7aea"];
-  return colors[Math.floor(Math.random() * colors.length)];
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawDarkness();
+  drawSnake();
+  drawFood();
+  moveSnake();
+  checkCollision();
+  scoreText.textContent = "Pontos: " + score;
+  if (score > 0 && score % 10 === 0) mensagem.textContent = "uau você é muito pro";
+  else mensagem.textContent = "";
 }
 
 function drawDarkness() {
-  ctx.fillStyle = "#000000cc";
+  ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  const head = snake[0];
-  const centerX = head.x * gridSize + gridSize / 2;
-  const centerY = head.y * gridSize + gridSize / 2;
-
-  const gradient = ctx.createRadialGradient(centerX, centerY, 20, centerX, centerY, lightRadius);
-  gradient.addColorStop(0, "rgba(255,255,255,0.06)");
-  gradient.addColorStop(1, "rgba(0,0,0,0.98)");
-
+  const centerX = snake[0].x * gridSize + gridSize / 2;
+  const centerY = snake[0].y * gridSize + gridSize / 2;
+  const radius = gridSize * 2.5;
+  const grad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
+  grad.addColorStop(0, "rgba(0,0,0,0)");
+  grad.addColorStop(1, "rgba(0,0,0,0.85)");
   ctx.globalCompositeOperation = "destination-out";
-  ctx.fillStyle = gradient;
+  ctx.fillStyle = grad;
   ctx.beginPath();
-  ctx.arc(centerX, centerY, lightRadius, 0, Math.PI * 2);
+  ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
   ctx.fill();
   ctx.globalCompositeOperation = "source-over";
 }
 
-function drawFood() {
-  ctx.fillStyle = foodColor;
-  ctx.fillRect(food.x * gridSize, food.y * gridSize, gridSize, gridSize);
-}
-
 function drawSnake() {
-  ctx.fillStyle = snakeColor;
-  for (let part of snake) {
-    ctx.fillRect(part.x * gridSize, part.y * gridSize, gridSize, gridSize);
-  }
+  snake.forEach((part, i) => {
+    ctx.fillStyle = i === 0 ? "#00ffcc" : "#40615a";
+    ctx.fillRect(part.x * gridSize, part.y * gridSize, gridSize - 2, gridSize - 2);
+  });
 }
 
-function update() {
-  if (!running) return;
+function drawFood() {
+  ctx.fillStyle = "#ff6347"; // cor do alimento (tomate)
+  ctx.beginPath();
+  ctx.arc(food.x * gridSize + gridSize / 2, food.y * gridSize + gridSize / 2, gridSize / 2.5, 0, Math.PI * 2);
+  ctx.fill();
+}
 
-  const head = { x: snake[0].x + velocity.x, y: snake[0].y + velocity.y };
-
-  if (head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount ||
-    snake.some((s, i) => i !== 0 && s.x === head.x && s.y === head.y)) {
-    gameOver = true;
-    running = false;
-    clearInterval(interval);
-    message.textContent = `Você perdeu! Pontuação: ${score}. Pressione qualquer tecla para jogar.`;
-    if (score > highScore) {
-      highScore = score;
-      localStorage.setItem("highScore", highScore);
-      highScoreDisplay.textContent = highScore;
-    }
-    return;
-  }
-
+function moveSnake() {
+  const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
   snake.unshift(head);
 
   if (head.x === food.x && head.y === food.y) {
     score++;
-    scoreDisplay.textContent = score;
-    snakeColor = foodColor; // atualiza a cor depois de comer
-    food = getRandomPosition();
-    foodColor = getRandomColor();
-
-    if (score % 10 === 0) {
-      message.textContent = "uau você é muito pro";
-      setTimeout(() => message.textContent = "", 2000);
+    food = randomPosition();
+    if (score > highScore) {
+      highScore = score;
+      localStorage.setItem("highScore", highScore); // salva o recorde
     }
   } else {
     snake.pop();
   }
 }
 
-function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawDarkness();
-  drawFood();
-  drawSnake();
-  update();
-}
-
-document.addEventListener("keydown", (e) => {
-  if (!running) {
-    resetGame();
-    return;
+function checkCollision() {
+  const head = snake[0];
+  if (
+    head.x < 0 || head.y < 0 ||
+    head.x >= tileCount || head.y >= tileCount ||
+    snake.slice(1).some(part => part.x === head.x && part.y === head.y)
+  ) {
+    clearInterval(game);
+    setTimeout(() => {
+      alert("Game Over! Pontuação: " + score);
+      initializeGame(); // reinicia o jogo
+    }, 200);
   }
-
-  const key = e.key.toLowerCase();
-  if (["arrowup", "w"].includes(key) && velocity.y !== 1) velocity = { x: 0, y: -1 };
-  else if (["arrowdown", "s"].includes(key) && velocity.y !== -1) velocity = { x: 0, y: 1 };
-  else if (["arrowleft", "a"].includes(key) && velocity.x !== 1) velocity = { x: -1, y: 0 };
-  else if (["arrowright", "d"].includes(key) && velocity.x !== -1) velocity = { x: 1, y: 0 };
-});
-
-function resetGame() {
-  snake = [{ x: 10, y: 10 }];
-  velocity = { x: 0, y: 0 };
-  food = getRandomPosition();
-  foodColor = getRandomColor();
-  snakeColor = "#40615a";
-  score = 0;
-  scoreDisplay.textContent = score;
-  gameOver = false;
-  message.textContent = "";
-  running = true;
-  bgm.play();
-  clearInterval(interval);
-  interval = setInterval(draw, 150);
 }
 
-resetGame();
+function randomPosition() {
+  return {
+    x: Math.floor(Math.random() * tileCount),
+    y: Math.floor(Math.random() * tileCount),
+  };
+}
+
+window.addEventListener("keydown", e => {
+  const key = e.key.toLowerCase();
+  if (["arrowup", "w"].includes(key) && direction.y === 0) direction = { x: 0, y: -1 };
+  if (["arrowdown", "s"].includes(key) && direction.y === 0) direction = { x: 0, y: 1 };
+  if (["arrowleft", "a"].includes(key) && direction.x === 0) direction = { x: -1, y: 0 };
+  if (["arrowright", "d"].includes(key) && direction.x === 0) direction = { x: 1, y: 0 };
+});

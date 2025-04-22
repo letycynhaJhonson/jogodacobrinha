@@ -1,22 +1,18 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Jogo da Cobrinha</title>
-  <link rel="stylesheet" href="style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <title>jogo da cobrinha</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1 id="title">Jogo da Cobrinha</h1>
-  <div id="scoreboard">
-    <span>Pontos: <span id="score">0</span></span>
-    <span>Recorde: <span id="highScore">0</span></span>
-  </div>
-  <canvas id="gameCanvas" width="500" height="500"></canvas>
-  <div id="message">Pressione qualquer tecla para jogar</div>
-  <audio id="bgm" loop>
-    <source src="https://cdn.pixabay.com/audio/2022/03/15/audio_b87c9f9c9b.mp3" type="audio/mp3">
+  <h1>🐍 jogo da cobrinha</h1>
+  <canvas id="gameCanvas" width="400" height="400"></canvas>
+  <p id="score">Pontos: 0</p>
+  <p id="highScore">Recorde: 0</p>
+  <p class="mensagem"></p>
+  <audio id="bgm" loop autoplay>
+    <source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_01f8b2c1d1.mp3?filename=galactic-beat-163615.mp3" type="audio/mp3">
   </audio>
   <script src="script.js"></script>
 </body>
